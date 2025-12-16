@@ -126,6 +126,13 @@ turnover_fitted = compute_turnover_fitted(df_clean)
 # =========================
 def build_multiplier_path(index, m_target: float, profile: str,
                           K_ramp: int = 6, K_up: int = 3, H_hold: int = 3, K_down: int = 3) -> pd.Series:
+    """
+    Returns a pd.Series m(t) over the full forecast horizon (same index).
+    profile:
+      - "Constant": constant multiplier
+      - "Ramp-up": linearly increases from 1 to m_target over K_ramp periods
+      - "Temporary": rises to m_target (K_up), holds (H_hold), then returns to 1 (K_down)
+    """
     n = len(index)
     t = np.arange(n, dtype=float)
 
@@ -166,6 +173,7 @@ def build_multiplier_path(index, m_target: float, profile: str,
     m = 1.0 + (float(m_target) - 1.0) * w
     return pd.Series(m, index=index, name="m_path")
 
+
 # Sensowne zakresy mnożników (min, max, default, step)
 DRIVER_RANGES = {
     "passengers":     (0.70, 1.30, 1.00, 0.01),
@@ -173,7 +181,15 @@ DRIVER_RANGES = {
     "length_of_stay": (0.85, 1.15, 1.00, 0.01),
     "rental_cars":    (0.70, 1.30, 1.00, 0.01),
     "cpi_iceland":    (0.95, 1.05, 1.00, 0.005),
-    "cpi_global":_
+    "cpi_global":     (0.95, 1.05, 1.00, 0.005),
+    "USA":            (0.90, 1.10, 1.00, 0.005),
+    "google_trends":  (0.80, 1.20, 1.00, 0.01),
+    "unemployment":   (0.85, 1.15, 1.00, 0.01),
+}
+
+def driver_slider(driver_key: str, label: str):
+    lo, hi, default, step = DRIVER_RANGES.get(driver_key, (0.80, 1.20, 1.00, 0.01))
+    return st.sidebar.slider(label, float(lo), float(hi), float(default), float(step))
 
 # =========================
 # 4) UI: scenario settings + driver multipliers
