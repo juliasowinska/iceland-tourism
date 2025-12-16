@@ -278,8 +278,6 @@ if not tryb_zaaw:
 # TRYB ZAAWANSOWANY (profil + suwak dla każdego drivera obok siebie)
 # -------------------------
 else:
-    st.sidebar.subheader("Profil m(t) + mnożnik — dla każdego drivera osobno")
-
     def per_driver_profile_controls(key: str):
         # profil
         prof_pl = st.sidebar.selectbox(
