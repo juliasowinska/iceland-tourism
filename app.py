@@ -204,18 +204,31 @@ DRIVER_LABELS_PL = {
     "google_trends":  "Google Trends",
     "unemployment":   "Bezrobocie",
 }
-
 PROFILE_PL_TO_EN = {
     "Stały": "Constant",
     "Narastający": "Ramp-up",
     "Przejściowy": "Temporary",
 }
 
-def driver_slider_pl(driver_key: str):
-    lo, hi, default, step = DRIVER_RANGES.get(driver_key, (0.80, 1.20, 1.00, 0.01))
-    label = DRIVER_LABELS_PL.get(driver_key, driver_key)
-    return st.sidebar.slider(label, float(lo), float(hi), float(default), float(step), key=f"mult_{driver_key}")
-
+def reset_ustawien():
+    # 1) reset trybu
+    st.session_state["tryb_zaaw"] = False
+    # 2) reset globalnego profilu (tryb prosty)
+    st.session_state["profile_pl"] = "Narastający"
+    st.session_state["K_ramp_global"] = 6
+    st.session_state["K_up_global"] = 3
+    st.session_state["H_hold_global"] = 3
+    st.session_state["K_down_global"] = 3
+    # 3) reset mnożników driverów
+    for k, (lo, hi, default, step) in DRIVER_RANGES.items():
+        st.session_state[f"mult_{k}"] = float(default)
+    # 4) reset profili per-driver (tryb zaawansowany)
+    # (czyścimy, żeby wróciły do defaultów przy kolejnym wejściu)
+    for key in list(st.session_state.keys()):
+        if key.startswith(("prof_", "Kr_", "Ku_", "H_", "Kd_")):
+            del st.session_state[key]
+    st.rerun()
+    
 # =========================
 # Reset ustawień (przycisk "Restart")
 # =========================
@@ -243,7 +256,7 @@ def reset_ustawien():
 # 4) UI: ustawienia scenariusza + mnożniki driverów
 # =========================
 st.sidebar.header("Ustawienia scenariusza")
-tryb_zaaw = st.sidebar.checkbox("Tryb zaawansowany", value=False)
+tryb_zaaw = st.sidebar.checkbox("Tryb zaawansowany", value=False, key="tryb_zaaw")
 
 if st.sidebar.button("🔄 Restart ustawień"):
     reset_ustawien()
@@ -287,7 +300,7 @@ if not tryb_zaaw:
     K_down_global = 3
 
     if profile_global == "Ramp-up":
-        K_ramp_global = st.sidebar.slider("Czas narastania (liczba okresów)", 1, 24, 6, 1)
+        K_ramp_global = st.sidebar.slider("Czas narastania (liczba okresów)", 1, 24, 6, 1, key="K_ramp_global")
     elif profile_global == "Temporary":
         cA, cB = st.sidebar.columns(2)
         with cA:
@@ -308,12 +321,8 @@ if not tryb_zaaw:
 else:
     def per_driver_profile_controls(key: str):
         # profil
-        prof_pl = st.sidebar.selectbox(
-            "Profil m(t)",
-            list(PROFILE_PL_TO_EN.keys()),
-            index=1,  # domyślnie Narastający
-            key=f"prof_{key}"
-        )
+        prof_pl = st.sidebar.selectbox("Profil m(t)", list(PROFILE_PL_TO_EN.keys()), index=1, key="profile_pl")
+
         prof_en = PROFILE_PL_TO_EN[prof_pl]
 
         # parametry czasu zależne od profilu
@@ -327,10 +336,10 @@ else:
         elif prof_en == "Temporary":
             c1, c2 = st.sidebar.columns(2)
             with c1:
-                K_up = st.sidebar.slider("Wzrost (okresy)", 1, 24, 3, 1, key=f"Ku_{key}")
-                H_hold = st.sidebar.slider("Utrzymanie (okresy)", 0, 24, 3, 1, key=f"H_{key}")
+                K_up_global   = st.sidebar.slider("Wzrost (okresy)", 1, 24, 3, 1, key="K_up_global")
+                H_hold_global = st.sidebar.slider("Utrzymanie (okresy)", 0, 24, 3, 1, key="H_hold_global")
             with c2:
-                K_down = st.sidebar.slider("Spadek (okresy)", 1, 24, 3, 1, key=f"Kd_{key}")
+                K_down_global = st.sidebar.slider("Spadek (okresy)", 1, 24, 3, 1, key="K_down_global")
 
         return {"profile": prof_en, "K_ramp": K_ramp, "K_up": K_up, "H_hold": H_hold, "K_down": K_down}
 
