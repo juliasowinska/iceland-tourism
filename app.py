@@ -270,20 +270,6 @@ def format_y(ax):
 
 SMALL = (5.5, 3.2)
 WIDE  = (14, 3.6)  
-
-if show_mpath:
-    st.subheader("Preview: multiplier path m(t)")
-    fig, ax = plt.subplots(figsize=SMALL)
-    # podgląd dla jednego przykładowego drivera (np. passengers)
-    m_preview = build_multiplier_path(low_base.index, m_target=pass_mult, profile=profile,
-                                      K_ramp=K_ramp, K_up=K_up, H_hold=H_hold, K_down=K_down)
-    ax.plot(m_preview.index, m_preview.values, linewidth=2)
-    ax.set_title("m(t) for passengers")
-    ax.grid(alpha=0.3)
-    format_year_axis(ax)
-    ax.yaxis.set_major_formatter(mtick.StrMethodFormatter("{x:,.2f}"))
-    st.pyplot(fig, clear_figure=True)
-
 c1, c2, c3 = st.columns(3)
 
 with c1:
