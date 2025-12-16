@@ -221,7 +221,7 @@ def driver_slider_pl(driver_key: str):
 st.sidebar.header("Ustawienia scenariusza")
 tryb_zaaw = st.sidebar.checkbox("Tryb zaawansowany", value=False)
 
-st.sidebar.header("Mnożniki driverów (względem scenariusza bazowego)")
+st.sidebar.header("Mnożniki driverów")
 
 # --- konfiguracja driverów w jednym miejscu (kolejność wyświetlania) ---
 DRIVERS = [
@@ -246,8 +246,6 @@ driver_profiles = {}
 # TRYB PROSTY (globalny profil m(t) + suwaki)
 # -------------------------
 if not tryb_zaaw:
-    st.sidebar.subheader("Profil mnożnika m(t) — wspólny dla wszystkich driverów")
-
     profile_pl = st.sidebar.selectbox(
         "Profil m(t)",
         list(PROFILE_PL_TO_EN.keys()),
