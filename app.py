@@ -220,7 +220,7 @@ def driver_slider_pl(driver_key: str):
 # =========================
 st.sidebar.header("Ustawienia scenariusza")
 
-tryb_zaaw = st.sidebar.checkbox("Tryb zaawansowany: osobny profil m(t) dla każdego drivera", value=False)
+tryb_zaaw = st.sidebar.checkbox("Tryb zaawansowany", value=False)
 
 # --- Ustawienia globalne (tryb prosty / domyślne w zaawansowanym) ---
 st.sidebar.subheader("Profil mnożnika m(t)")
@@ -248,6 +248,54 @@ elif profile_global == "Temporary":
         K_down_global = st.sidebar.slider("Spadek (okresy)", 1, 24, 3, 1)
 
 pokaz_m = st.sidebar.checkbox("Pokaż podgląd m(t)", value=False)
+st.sidebar.caption(
+    "m(t) opisuje, w jaki sposób założony szok (mnożnik docelowy) "
+    "jest rozłożony w czasie."
+)
+if pokaz_m:
+    st.sidebar.markdown("**Podgląd przebiegu mnożnika m(t)**")
+
+    # pokazujemy m(t) dla jednego drivera referencyjnego (np. pasażerowie)
+    if tryb_zaaw and "passengers" in driver_profiles:
+        p = driver_profiles["passengers"]
+        m_preview = build_multiplier_path(
+            low_base.index,
+            m_target=pass_mult,
+            profile=p["profile"],
+            K_ramp=p["K_ramp"],
+            K_up=p["K_up"],
+            H_hold=p["H_hold"],
+            K_down=p["K_down"],
+        )
+        tytul = "Pasażerowie (tryb zaawansowany)"
+    else:
+        m_preview = build_multiplier_path(
+            low_base.index,
+            m_target=pass_mult,
+            profile=profile_global,
+            K_ramp=K_ramp_global,
+            K_up=K_up_global,
+            H_hold=H_hold_global,
+            K_down=K_down_global,
+        )
+        tytul = "Pasażerowie (tryb prosty)"
+
+    fig, ax = plt.subplots(figsize=(3.8, 2.0))  # MAŁY wykres do sidebaru
+    ax.plot(m_preview.index, m_preview.values, linewidth=2)
+    ax.set_title(tytul, fontsize=9)
+    ax.grid(alpha=0.3)
+
+    ax.xaxis.set_major_locator(mdates.YearLocator())
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
+    for lab in ax.get_xticklabels():
+        lab.set_rotation(45)
+        lab.set_ha("right")
+        lab.set_fontsize(7)
+
+    ax.yaxis.set_major_formatter(mtick.StrMethodFormatter("{x:,.2f}"))
+    ax.tick_params(axis="y", labelsize=7)
+
+    st.sidebar.pyplot(fig, clear_figure=True)
 
 st.sidebar.header("Mnożniki driverów (względem scenariusza bazowego)")
 
@@ -357,28 +405,6 @@ def format_y(ax):
 
 SMALL = (5.5, 3.2)
 WIDE  = (14, 3.6)  
-
-if pokaz_m:
-    st.subheader("Podgląd: przebieg mnożnika m(t)")
-
-    # pokazujemy m(t) dla wybranego drivera (np. pasażerowie)
-    if tryb_zaaw and "passengers" in driver_profiles:
-        p = driver_profiles["passengers"]
-        m_preview = build_multiplier_path(low_base.index, m_target=pass_mult, profile=p["profile"],
-                                          K_ramp=p["K_ramp"], K_up=p["K_up"], H_hold=p["H_hold"], K_down=p["K_down"])
-        tytul = "m(t) — Pasażerowie (tryb zaawansowany)"
-    else:
-        m_preview = build_multiplier_path(low_base.index, m_target=pass_mult, profile=profile_global,
-                                          K_ramp=K_ramp_global, K_up=K_up_global, H_hold=H_hold_global, K_down=K_down_global)
-        tytul = "m(t) — Pasażerowie (tryb prosty)"
-
-    fig, ax = plt.subplots(figsize=SMALL)
-    ax.plot(m_preview.index, m_preview.values, linewidth=2)
-    ax.set_title(tytul)
-    ax.grid(alpha=0.3)
-    format_year_axis(ax)
-    ax.yaxis.set_major_formatter(mtick.StrMethodFormatter("{x:,.2f}"))
-    st.pyplot(fig, clear_figure=True)
 
 c1, c2, c3 = st.columns(3)
 
