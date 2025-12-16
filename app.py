@@ -193,15 +193,15 @@ def driver_slider(driver_key: str, label: str):
 
 # Etykiety po polsku dla driverów
 DRIVER_LABELS_PL = {
-    "passengers":     "Pasażerowie (mnożnik docelowy ×)",
-    "occupancy":      "Obłożenie (mnożnik docelowy ×)",
-    "length_of_stay": "Długość pobytu (mnożnik docelowy ×)",
-    "rental_cars":    "Wynajem aut (mnożnik docelowy ×)",
-    "cpi_iceland":    "CPI Islandia (mnożnik docelowy ×)",
-    "cpi_global":     "CPI globalny (mnożnik docelowy ×)",
-    "USA":            "Indeks USA (mnożnik docelowy ×)",
-    "google_trends":  "Google Trends (mnożnik docelowy ×)",
-    "unemployment":   "Bezrobocie (mnożnik docelowy ×)",
+    "passengers":     "Pasażerowie",
+    "occupancy":      "Obłożenie hoteli",
+    "length_of_stay": "Długość pobytu",
+    "rental_cars":    "Wynajem aut",
+    "cpi_iceland":    "CPI Islandia",
+    "cpi_global":     "CPI globalny",
+    "USA":            "Indeks USA",
+    "google_trends":  "Google Trends",
+    "unemployment":   "Bezrobocie",
 }
 
 PROFILE_PL_TO_EN = {
