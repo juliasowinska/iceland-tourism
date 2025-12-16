@@ -10,6 +10,14 @@ import matplotlib.ticker as mtick
 st.set_page_config(page_title="Iceland Tourism – What-if", layout="wide")
 st.title("Iceland Tourism – What-if scenarios (driver-level)")
 
+COL = {
+    "history": "blue",       
+    "fitted":  "ligthskyblue",       
+    "baseline": "#ffc99d",      # niebieski
+    "scenario": "darkorange",      # pomarańczowy
+    "grid": "#cfcfcf"
+}
+
 # =========================
 # 1) LOAD ARTEFAKTÓW (cache)
 # =========================
@@ -40,6 +48,28 @@ def load_data():
 (df_clean, low_base) = load_data()
 (ols_overnight, ols_cpi, ols_emp, ols_turnover,
  resid_sarima_overnight, resid_sarima_cpi, resid_sarima_emp, resid_sarima_turnover) = load_models()
+
+def compute_turnover_fitted(df_clean):
+    # OLS fitted na historii (na tych samych zmiennych, co w modelu)
+    exog_t = ols_turnover.model.exog_names
+    vars_t = [v for v in exog_t if v != "const"]
+
+    X_hist = sm.add_constant(df_clean[vars_t].copy())
+    X_hist = X_hist[exog_t]
+
+    reg_fitted = ols_turnover.predict(X_hist)
+
+    # SARIMA fitted reszt na historii
+    resid_fitted = resid_sarima_turnover.get_prediction(
+        start=df_clean.index[0],
+        end=df_clean.index[-1],
+        dynamic=False
+    ).predicted_mean
+
+    resid_fitted = resid_fitted.reindex(df_clean.index)
+
+    fitted = (reg_fitted + resid_fitted).rename("turnover_fitted")
+    return fitted
 
 # =========================
 # 2) FUNKCJE FORECAST (te same co w notebooku, tylko używają wczytanych modeli)
@@ -89,6 +119,8 @@ def forecast_turnover_from_main(main_df):
     resid_t.index = main_df.index
     return (reg_turn + resid_t).rename("turnover_forecast")
 
+turnover_fitted = compute_turnover_fitted(df_clean)
+
 # =========================
 # 3) UI: suwaki
 # =========================
@@ -135,12 +167,16 @@ def format_year_axis(ax):
 def format_y(ax):
     ax.yaxis.set_major_formatter(mtick.StrMethodFormatter("{x:,.0f}"))
 
+SMALL = (5.5, 3.2)
+WIDE  = (14, 3.6)  
 c1, c2, c3 = st.columns(3)
 
 with c1:
-    fig, ax = plt.subplots(figsize=(5.5, 3.2))
-    ax.plot(main_base.index, main_base["overnight_stays"], "--", label="baseline")
-    ax.plot(main_scen.index, main_scen["overnight_stays"], label="scenario")
+    fig, ax = plt.subplots(figsize=SMALL)
+    ax.plot(main_base.index, main_base["overnight_stays"], "--",
+        label="baseline", color=COL["baseline"], linewidth=2, alpha=0.9)
+    ax.plot(main_scen.index, main_scen["overnight_stays"],
+        label="scenario", color=COL["scenario"], linewidth=2)
     ax.set_title("overnight_stays")
     ax.grid(alpha=0.3)
     format_year_axis(ax); format_y(ax)
@@ -148,9 +184,11 @@ with c1:
     st.pyplot(fig, clear_figure=True)
 
 with c2:
-    fig, ax = plt.subplots(figsize=(5.5, 3.2))
-    ax.plot(main_base.index, main_base["cpi_accommodation"], "--", label="baseline")
-    ax.plot(main_scen.index, main_scen["cpi_accommodation"], label="scenario")
+    fig, ax = plt.subplots(figsize=SMALL)
+    ax.plot(main_base.index, main_base["cpi_accommodation"], "--",
+        label="baseline", color=COL["baseline"], linewidth=2, alpha=0.9)
+    ax.plot(main_scen.index, main_scen["cpi_accommodation"],
+        label="scenario", color=COL["scenario"], linewidth=2)
     ax.set_title("cpi_accommodation")
     ax.grid(alpha=0.3)
     format_year_axis(ax); format_y(ax)
@@ -158,25 +196,33 @@ with c2:
     st.pyplot(fig, clear_figure=True)
 
 with c3:
-    fig, ax = plt.subplots(figsize=(5.5, 3.2))
-    ax.plot(main_base.index, main_base["empoyment_tourism"], "--", label="baseline")
-    ax.plot(main_scen.index, main_scen["empoyment_tourism"], label="scenario")
+    fig, ax = plt.subplots(figsize=SMALL)
+    ax.plot(main_base.index, main_base["empoyment_tourism"], "--",
+        label="baseline", color=COL["baseline"], linewidth=2, alpha=0.9)
+    ax.plot(main_scen.index, main_scen["empoyment_tourism"],
+        label="scenario", color=COL["scenario"], linewidth=2)
     ax.set_title("employment_tourism")
     ax.grid(alpha=0.3)
     format_year_axis(ax); format_y(ax)
     ax.legend(fontsize=8)
     st.pyplot(fig, clear_figure=True)
 
-fig, ax = plt.subplots(figsize=(14, 4))
-ax.plot(df_clean.index, df_clean["turnover"], label="History", linewidth=2)
-ax.plot(fc_base.index, fc_base, label="Baseline forecast", marker="o")
-ax.plot(fc_scen.index, fc_scen, label="Scenario forecast", marker="o")
+fig, ax = plt.subplots(figsize=WIDE)
+ax.plot(df_clean.index, df_clean["turnover"],
+        label="History", color=COL["history"], linewidth=2)
+ax.plot(turnover_fitted.index, turnover_fitted.values,
+        label="Baseline (history) – fitted", color=COL["fitted"], linewidth=2, alpha=0.9)
+ax.plot(fc_base.index, fc_base.values,
+        label="Baseline forecast", color=COL["baseline"], linewidth=2, marker="o")
+ax.plot(fc_scen.index, fc_scen.values,
+        label="Scenario forecast", color=COL["scenario"], linewidth=2, marker="o")
 ax.axvline(df_clean.index.max(), color="gray", linestyle="--", alpha=0.7)
-ax.set_title("Turnover – history, baseline vs scenario")
+ax.set_title("Turnover – history, fitted, baseline vs scenario")
 ax.grid(alpha=0.3)
 format_year_axis(ax); format_y(ax)
 ax.legend()
 st.pyplot(fig, clear_figure=True)
+
 
 with st.expander("Tables"):
     st.subheader("Scenario drivers (low-level)")
