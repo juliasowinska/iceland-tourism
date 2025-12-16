@@ -372,7 +372,7 @@ with c1:
     ax.plot(main_base.index, main_base["overnight_stays"], "--",
         label="prognoza SARIMA + OLS", color=COL["baseline"], linewidth=2, alpha=0.9)
     ax.plot(main_scen.index, main_scen["overnight_stays"],
-        label="scenario", color=COL["scenario"], linewidth=2)
+        label="scenariusz", color=COL["scenario"], linewidth=2)
     ax.set_title("Liczba noclegów")
     ax.grid(alpha=0.3)
     format_year_axis(ax); format_y(ax)
@@ -382,9 +382,9 @@ with c1:
 with c2:
     fig, ax = plt.subplots(figsize=SMALL)
     ax.plot(main_base.index, main_base["cpi_accommodation"], "--",
-        label="baseline", color=COL["baseline"], linewidth=2, alpha=0.9)
+        label="prognoza SARIMA + OLS", color=COL["baseline"], linewidth=2, alpha=0.9)
     ax.plot(main_scen.index, main_scen["cpi_accommodation"],
-        label="scenario", color=COL["scenario"], linewidth=2)
+        label="scenariusz", color=COL["scenario"], linewidth=2)
     ax.set_title("Inflacja w sektorze turystycznym Islandii")
     ax.grid(alpha=0.3)
     format_year_axis(ax); format_y(ax)
@@ -394,9 +394,9 @@ with c2:
 with c3:
     fig, ax = plt.subplots(figsize=SMALL)
     ax.plot(main_base.index, main_base["empoyment_tourism"], "--",
-        label="baseline", color=COL["baseline"], linewidth=2, alpha=0.9)
+        label="prognoza SARIMA + OLS", color=COL["baseline"], linewidth=2, alpha=0.9)
     ax.plot(main_scen.index, main_scen["empoyment_tourism"],
-        label="scenario", color=COL["scenario"], linewidth=2)
+        label="scenariusz", color=COL["scenario"], linewidth=2)
     ax.set_title("Zatrudnienie w sektorze turystycznym w Islandii")
     ax.grid(alpha=0.3)
     format_year_axis(ax); format_y(ax)
@@ -405,13 +405,13 @@ with c3:
 
 fig, ax = plt.subplots(figsize=WIDE)
 ax.plot(df_clean.index, df_clean["turnover"],
-        label="History", color=COL["history"], linewidth=2)
+        label="wartości historyczne", color=COL["history"], linewidth=2)
 ax.plot(turnover_fitted.index, turnover_fitted.values,
-        label="Baseline (history) – fitted", color=COL["fitted"], linewidth=2, alpha=0.9)
+        label="wartości teoretyczne prognozy SARIMA + OLS", color=COL["fitted"], linewidth=2, alpha=0.9)
 ax.plot(fc_base.index, fc_base.values,
-        label="Baseline forecast", color=COL["baseline"], linewidth=2, marker="o")
+        label="prognoza SARIMA + OLS", color=COL["baseline"], linewidth=2, marker="o")
 ax.plot(fc_scen.index, fc_scen.values,
-        label="Scenario forecast", color=COL["scenario"], linewidth=2, marker="o")
+        label="scenariusz", color=COL["scenario"], linewidth=2, marker="o")
 ax.axvline(df_clean.index.max(), color="gray", linestyle="--", alpha=0.7)
 ax.set_title("Obroty w sektorze turystycznym w Islandii")
 ax.grid(alpha=0.3)
