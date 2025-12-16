@@ -214,13 +214,40 @@ PROFILE_PL_TO_EN = {
 def driver_slider_pl(driver_key: str):
     lo, hi, default, step = DRIVER_RANGES.get(driver_key, (0.80, 1.20, 1.00, 0.01))
     label = DRIVER_LABELS_PL.get(driver_key, driver_key)
-    return st.sidebar.slider(label, float(lo), float(hi), float(default), float(step))
+    return st.sidebar.slider(label, float(lo), float(hi), float(default), float(step), key=f"mult_{driver_key}")
+
+# =========================
+# Reset ustawień (przycisk "Restart")
+# =========================
+def reset_ustawien():
+    # czyścimy tylko to, co dotyczy scenariusza (reszty aplikacji nie ruszamy)
+    keys_to_delete = [k for k in st.session_state.keys() if k.startswith(("prof_", "Kr_", "Ku_", "H_", "Kd_"))]
+    # suwaki driverów mają etykiety jako klucze, jeśli nie podasz `key=...`
+    # dlatego czyścimy również po etykietach PL:
+    keys_to_delete += [f"mult_{k}" for k in DRIVER_LABELS_PL.keys()]
+    # globalne kontrolki (tryb prosty)
+    keys_to_delete += [
+        "Tryb zaawansowany",
+        "Profil m(t)",
+        "Czas narastania (liczba okresów)",
+        "Wzrost (okresy)",
+        "Utrzymanie (okresy)",
+        "Spadek (okresy)",
+    ]
+    for k in set(keys_to_delete):
+        if k in st.session_state:
+            del st.session_state[k]
+    st.rerun()
 
 # =========================
 # 4) UI: ustawienia scenariusza + mnożniki driverów
 # =========================
 st.sidebar.header("Ustawienia scenariusza")
 tryb_zaaw = st.sidebar.checkbox("Tryb zaawansowany", value=False)
+
+if st.sidebar.button("🔄 Restart ustawień"):
+    reset_ustawien()
+st.sidebar.divider()
 
 st.sidebar.header("Mnożniki driverów")
 
