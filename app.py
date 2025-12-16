@@ -11,7 +11,7 @@ st.set_page_config(page_title="Iceland Tourism – What-if", layout="wide")
 st.title("Iceland Tourism – What-if scenarios (driver-level)")
 
 COL = {
-    "history": "blue",       
+    "history": "tab:blue",       
     "fitted":  "lightskyblue",       
     "baseline": "#ffc99d",      # niebieski
     "scenario": "darkorange",      # pomarańczowy
