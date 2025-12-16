@@ -308,32 +308,32 @@ if not tryb_zaaw:
 # -------------------------
 else:
     def per_driver_profile_controls(key: str):
-    prof_pl = st.sidebar.selectbox(
-        "Profil m(t)",
-        list(PROFILE_PL_TO_EN.keys()),
-        index=1,
-        key=f"prof_{key}"
-    )
-    prof_en = PROFILE_PL_TO_EN[prof_pl]
-
-    # domyślne parametry per driver
-    K_ramp = 6
-    K_up = 3
-    H_hold = 3
-    K_down = 3
-
-    if prof_en == "Ramp-up":
-        K_ramp = st.sidebar.slider("Czas narastania (okresy)", 1, 24, 6, 1, key=f"Kr_{key}")
-
-    elif prof_en == "Temporary":
-        c1, c2 = st.sidebar.columns(2)
-        with c1:
-            K_up = st.sidebar.slider("Wzrost (okresy)", 1, 24, 3, 1, key=f"Ku_{key}")
-            H_hold = st.sidebar.slider("Utrzymanie (okresy)", 0, 24, 3, 1, key=f"H_{key}")
-        with c2:
-            K_down = st.sidebar.slider("Spadek (okresy)", 1, 24, 3, 1, key=f"Kd_{key}")
-
-    return {"profile": prof_en, "K_ramp": K_ramp, "K_up": K_up, "H_hold": H_hold, "K_down": K_down}
+        prof_pl = st.sidebar.selectbox(
+            "Profil m(t)",
+            list(PROFILE_PL_TO_EN.keys()),
+            index=1,
+            key=f"prof_{key}"
+        )
+        prof_en = PROFILE_PL_TO_EN[prof_pl]
+    
+        # domyślne parametry per driver
+        K_ramp = 6
+        K_up = 3
+        H_hold = 3
+        K_down = 3
+    
+        if prof_en == "Ramp-up":
+            K_ramp = st.sidebar.slider("Czas narastania (okresy)", 1, 24, 6, 1, key=f"Kr_{key}")
+    
+        elif prof_en == "Temporary":
+            c1, c2 = st.sidebar.columns(2)
+            with c1:
+                K_up = st.sidebar.slider("Wzrost (okresy)", 1, 24, 3, 1, key=f"Ku_{key}")
+                H_hold = st.sidebar.slider("Utrzymanie (okresy)", 0, 24, 3, 1, key=f"H_{key}")
+            with c2:
+                K_down = st.sidebar.slider("Spadek (okresy)", 1, 24, 3, 1, key=f"Kd_{key}")
+    
+        return {"profile": prof_en, "K_ramp": K_ramp, "K_up": K_up, "H_hold": H_hold, "K_down": K_down}
     
     for k in DRIVERS:
         # sekcja per driver: NAJPIERW profil, POTEM mnożnik
