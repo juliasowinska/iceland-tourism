@@ -12,7 +12,7 @@ st.title("Iceland Tourism – What-if scenarios (driver-level)")
 
 COL = {
     "history": "blue",       
-    "fitted":  "ligthskyblue",       
+    "fitted":  "lightskyblue",       
     "baseline": "#ffc99d",      # niebieski
     "scenario": "darkorange",      # pomarańczowy
     "grid": "#cfcfcf"
