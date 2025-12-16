@@ -219,137 +219,112 @@ def driver_slider_pl(driver_key: str):
 # 4) UI: ustawienia scenariusza + mnożniki driverów
 # =========================
 st.sidebar.header("Ustawienia scenariusza")
-
 tryb_zaaw = st.sidebar.checkbox("Tryb zaawansowany", value=False)
-
-# --- Ustawienia globalne (tryb prosty / domyślne w zaawansowanym) ---
-st.sidebar.subheader("Profil mnożnika m(t)")
-
-profile_pl = st.sidebar.selectbox(
-    "Profil m(t)",
-    list(PROFILE_PL_TO_EN.keys()),
-    index=1  # Narastający
-)
-profile_global = PROFILE_PL_TO_EN[profile_pl]
-
-K_ramp_global = 6
-K_up_global = 3
-H_hold_global = 3
-K_down_global = 3
-
-if profile_global == "Ramp-up":
-    K_ramp_global = st.sidebar.slider("Czas narastania (liczba okresów)", 1, 24, 6, 1)
-elif profile_global == "Temporary":
-    cA, cB = st.sidebar.columns(2)
-    with cA:
-        K_up_global = st.sidebar.slider("Wzrost (okresy)", 1, 24, 3, 1)
-        H_hold_global = st.sidebar.slider("Utrzymanie (okresy)", 0, 24, 3, 1)
-    with cB:
-        K_down_global = st.sidebar.slider("Spadek (okresy)", 1, 24, 3, 1)
-
-pokaz_m = st.sidebar.checkbox("Pokaż podgląd m(t)", value=False)
-st.sidebar.caption(
-    "m(t) opisuje, w jaki sposób założony szok (mnożnik docelowy) "
-    "jest rozłożony w czasie."
-)
-if pokaz_m:
-    st.sidebar.markdown("**Podgląd przebiegu mnożnika m(t)**")
-
-    # pokazujemy m(t) dla jednego drivera referencyjnego (np. pasażerowie)
-    if tryb_zaaw and "passengers" in driver_profiles:
-        p = driver_profiles["passengers"]
-        m_preview = build_multiplier_path(
-            low_base.index,
-            m_target=pass_mult,
-            profile=p["profile"],
-            K_ramp=p["K_ramp"],
-            K_up=p["K_up"],
-            H_hold=p["H_hold"],
-            K_down=p["K_down"],
-        )
-        tytul = "Pasażerowie (tryb zaawansowany)"
-    else:
-        m_preview = build_multiplier_path(
-            low_base.index,
-            m_target=pass_mult,
-            profile=profile_global,
-            K_ramp=K_ramp_global,
-            K_up=K_up_global,
-            H_hold=H_hold_global,
-            K_down=K_down_global,
-        )
-        tytul = "Pasażerowie (tryb prosty)"
-
-    fig, ax = plt.subplots(figsize=(3.8, 2.0))  # MAŁY wykres do sidebaru
-    ax.plot(m_preview.index, m_preview.values, linewidth=2)
-    ax.set_title(tytul, fontsize=9)
-    ax.grid(alpha=0.3)
-
-    ax.xaxis.set_major_locator(mdates.YearLocator())
-    ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
-    for lab in ax.get_xticklabels():
-        lab.set_rotation(45)
-        lab.set_ha("right")
-        lab.set_fontsize(7)
-
-    ax.yaxis.set_major_formatter(mtick.StrMethodFormatter("{x:,.2f}"))
-    ax.tick_params(axis="y", labelsize=7)
-
-    st.sidebar.pyplot(fig, clear_figure=True)
 
 st.sidebar.header("Mnożniki driverów (względem scenariusza bazowego)")
 
-# Suwaki driverów (po polsku)
-pass_mult = driver_slider_pl("passengers")
-occ_mult  = driver_slider_pl("occupancy")
-los_mult  = driver_slider_pl("length_of_stay")
-rent_mult = driver_slider_pl("rental_cars")
-cpiisl_mult    = driver_slider_pl("cpi_iceland")
-cpiglobal_mult = driver_slider_pl("cpi_global")
-usa_mult       = driver_slider_pl("USA")
-trends_mult    = driver_slider_pl("google_trends")
-unemp_mult     = driver_slider_pl("unemployment")
+# --- konfiguracja driverów w jednym miejscu (kolejność wyświetlania) ---
+DRIVERS = [
+    "passengers",
+    "occupancy",
+    "length_of_stay",
+    "rental_cars",
+    "cpi_iceland",
+    "cpi_global",
+    "USA",
+    "google_trends",
+    "unemployment",
+]
 
-# --- Ustawienia per-driver (tylko tryb zaawansowany) ---
+# wartości mnożników (suwaki) trzymamy zawsze osobno
+driver_mults = {}
+
+# profile per driver (tylko w trybie zaawansowanym)
 driver_profiles = {}
-if tryb_zaaw:
-    st.sidebar.header("Zaawansowane: profil m(t) per driver")
 
-    # Helper do budowy kontrolek per driver (żeby nie dublować kodu)
+# -------------------------
+# TRYB PROSTY (globalny profil m(t) + suwaki)
+# -------------------------
+if not tryb_zaaw:
+    st.sidebar.subheader("Profil mnożnika m(t) — wspólny dla wszystkich driverów")
+
+    profile_pl = st.sidebar.selectbox(
+        "Profil m(t)",
+        list(PROFILE_PL_TO_EN.keys()),
+        index=1  # Narastający
+    )
+    profile_global = PROFILE_PL_TO_EN[profile_pl]
+
+    K_ramp_global = 6
+    K_up_global = 3
+    H_hold_global = 3
+    K_down_global = 3
+
+    if profile_global == "Ramp-up":
+        K_ramp_global = st.sidebar.slider("Czas narastania (liczba okresów)", 1, 24, 6, 1)
+    elif profile_global == "Temporary":
+        cA, cB = st.sidebar.columns(2)
+        with cA:
+            K_up_global = st.sidebar.slider("Wzrost (okresy)", 1, 24, 3, 1)
+            H_hold_global = st.sidebar.slider("Utrzymanie (okresy)", 0, 24, 3, 1)
+        with cB:
+            K_down_global = st.sidebar.slider("Spadek (okresy)", 1, 24, 3, 1)
+
+    st.sidebar.divider()
+
+    # suwaki mnożników driverów (bez profili per driver)
+    for k in DRIVERS:
+        driver_mults[k] = driver_slider_pl(k)
+
+# -------------------------
+# TRYB ZAAWANSOWANY (profil + suwak dla każdego drivera obok siebie)
+# -------------------------
+else:
+    st.sidebar.subheader("Profil m(t) + mnożnik — dla każdego drivera osobno")
+
     def per_driver_profile_controls(key: str):
-        st.sidebar.markdown(f"**{DRIVER_LABELS_PL.get(key, key)}**")
-
+        # profil
         prof_pl = st.sidebar.selectbox(
-            f"Profil m(t) — {key}",
+            "Profil m(t)",
             list(PROFILE_PL_TO_EN.keys()),
-            index=list(PROFILE_PL_TO_EN.keys()).index(profile_pl),
+            index=1,  # domyślnie Narastający
             key=f"prof_{key}"
         )
         prof_en = PROFILE_PL_TO_EN[prof_pl]
 
-        K_ramp = K_ramp_global
-        K_up = K_up_global
-        H_hold = H_hold_global
-        K_down = K_down_global
+        # parametry czasu zależne od profilu
+        K_ramp = 6
+        K_up = 3
+        H_hold = 3
+        K_down = 3
 
         if prof_en == "Ramp-up":
-            K_ramp = st.sidebar.slider(
-                f"Czas narastania (okresy) — {key}",
-                1, 24, int(K_ramp_global), 1,
-                key=f"Kr_{key}"
-            )
+            K_ramp = st.sidebar.slider("Czas narastania (okresy)", 1, 24, 6, 1, key=f"Kr_{key}")
         elif prof_en == "Temporary":
             c1, c2 = st.sidebar.columns(2)
             with c1:
-                K_up = st.sidebar.slider(f"Wzrost (okresy) — {key}", 1, 24, int(K_up_global), 1, key=f"Ku_{key}")
-                H_hold = st.sidebar.slider(f"Utrzymanie (okresy) — {key}", 0, 24, int(H_hold_global), 1, key=f"H_{key}")
+                K_up = st.sidebar.slider("Wzrost (okresy)", 1, 24, 3, 1, key=f"Ku_{key}")
+                H_hold = st.sidebar.slider("Utrzymanie (okresy)", 0, 24, 3, 1, key=f"H_{key}")
             with c2:
-                K_down = st.sidebar.slider(f"Spadek (okresy) — {key}", 1, 24, int(K_down_global), 1, key=f"Kd_{key}")
+                K_down = st.sidebar.slider("Spadek (okresy)", 1, 24, 3, 1, key=f"Kd_{key}")
 
         return {"profile": prof_en, "K_ramp": K_ramp, "K_up": K_up, "H_hold": H_hold, "K_down": K_down}
 
-    for k in ["passengers","occupancy","length_of_stay","rental_cars","cpi_iceland","cpi_global","USA","google_trends","unemployment"]:
+    for k in DRIVERS:
+        # sekcja per driver: NAJPIERW profil, POTEM mnożnik
+        st.sidebar.markdown(f"### {DRIVER_LABELS_PL.get(k, k).replace('(mnożnik docelowy ×)', '').strip()}")
+
         driver_profiles[k] = per_driver_profile_controls(k)
+        driver_mults[k] = driver_slider_pl(k)
+
+        st.sidebar.divider()
+
+    # wartości globalne ustawiamy na None (żeby nie było przypadkowego użycia)
+    profile_global = None
+    K_ramp_global = None
+    K_up_global = None
+    H_hold_global = None
+    K_down_global = None
 
 # =========================
 # 5) baseline + scenario
@@ -358,18 +333,6 @@ main_base = forecast_main_from_low(low_base)
 fc_base = forecast_turnover_from_main(main_base)
 
 low_scen = low_base.copy()
-
-driver_mults = {
-    "passengers": pass_mult,
-    "occupancy": occ_mult,
-    "length_of_stay": los_mult,
-    "rental_cars": rent_mult,
-    "cpi_iceland": cpiisl_mult,
-    "cpi_global": cpiglobal_mult,
-    "USA": usa_mult,
-    "google_trends": trends_mult,
-    "unemployment": unemp_mult,
-}
 
 for col, mult in driver_mults.items():
     if col in low_scen.columns:
@@ -384,8 +347,8 @@ for col, mult in driver_mults.items():
                 low_base.index, m_target=mult, profile=profile_global,
                 K_ramp=K_ramp_global, K_up=K_up_global, H_hold=H_hold_global, K_down=K_down_global
             )
-
         low_scen[col] = low_base[col] * m_path
+
 
 main_scen = forecast_main_from_low(low_scen)
 fc_scen = forecast_turnover_from_main(main_scen)
