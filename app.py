@@ -188,10 +188,6 @@ DRIVER_RANGES = {
     "unemployment":   (0.85, 1.15, 1.00, 0.01),
 }
 
-def driver_slider(driver_key: str, label: str):
-    lo, hi, default, step = DRIVER_RANGES.get(driver_key, (0.80, 1.20, 1.00, 0.01))
-    return st.sidebar.slider(label, float(lo), float(hi), float(default), float(step))
-
 # Etykiety po polsku dla driverów
 DRIVER_LABELS_PL = {
     "passengers":     "Pasażerowie",
@@ -210,46 +206,36 @@ PROFILE_PL_TO_EN = {
     "Przejściowy": "Temporary",
 }
 
-def reset_ustawien():
-    # 1) reset trybu
-    st.session_state["tryb_zaaw"] = False
-    # 2) reset globalnego profilu (tryb prosty)
-    st.session_state["profile_pl"] = "Narastający"
-    st.session_state["K_ramp_global"] = 6
-    st.session_state["K_up_global"] = 3
-    st.session_state["H_hold_global"] = 3
-    st.session_state["K_down_global"] = 3
-    # 3) reset mnożników driverów
-    for k, (lo, hi, default, step) in DRIVER_RANGES.items():
-        st.session_state[f"mult_{k}"] = float(default)
-    # 4) reset profili per-driver (tryb zaawansowany)
-    # (czyścimy, żeby wróciły do defaultów przy kolejnym wejściu)
-    for key in list(st.session_state.keys()):
-        if key.startswith(("prof_", "Kr_", "Ku_", "H_", "Kd_")):
-            del st.session_state[key]
-    st.rerun()
-    
+def driver_slider_pl(driver_key: str):
+    lo, hi, default, step = DRIVER_RANGES.get(driver_key, (0.80, 1.20, 1.00, 0.01))
+    label = DRIVER_LABELS_PL.get(driver_key, driver_key)
+    return st.sidebar.slider(
+        label,
+        float(lo), float(hi),
+        float(default),
+        float(step),
+        key=f"mult_{driver_key}"
+    )
+
 # =========================
 # Reset ustawień (przycisk "Restart")
 # =========================
 def reset_ustawien():
-    # czyścimy tylko to, co dotyczy scenariusza (reszty aplikacji nie ruszamy)
-    keys_to_delete = [k for k in st.session_state.keys() if k.startswith(("prof_", "Kr_", "Ku_", "H_", "Kd_"))]
-    # suwaki driverów mają etykiety jako klucze, jeśli nie podasz `key=...`
-    # dlatego czyścimy również po etykietach PL:
-    keys_to_delete += [f"mult_{k}" for k in DRIVER_LABELS_PL.keys()]
-    # globalne kontrolki (tryb prosty)
-    keys_to_delete += [
-        "Tryb zaawansowany",
-        "Profil m(t)",
-        "Czas narastania (liczba okresów)",
-        "Wzrost (okresy)",
-        "Utrzymanie (okresy)",
-        "Spadek (okresy)",
-    ]
-    for k in set(keys_to_delete):
-        if k in st.session_state:
-            del st.session_state[k]
+    # reset trybu
+    st.session_state["tryb_zaaw"] = False
+    # reset ustawień globalnych (tryb prosty)
+    st.session_state["profile_global_pl"] = "Narastający"
+    st.session_state["K_ramp_global"] = 6
+    st.session_state["K_up_global"] = 3
+    st.session_state["H_hold_global"] = 3
+    st.session_state["K_down_global"] = 3
+    # reset mnożników driverów
+    for k, (lo, hi, default, step) in DRIVER_RANGES.items():
+        st.session_state[f"mult_{k}"] = float(default)
+    # reset profili per-driver
+    for key in list(st.session_state.keys()):
+        if key.startswith(("prof_", "Kr_", "Ku_", "H_", "Kd_")):
+            del st.session_state[key]
     st.rerun()
 
 # =========================
@@ -290,8 +276,10 @@ if not tryb_zaaw:
     profile_pl = st.sidebar.selectbox(
         "Profil m(t)",
         list(PROFILE_PL_TO_EN.keys()),
-        index=1  # Narastający
+        index=1,
+        key="profile_global_pl"
     )
+
     profile_global = PROFILE_PL_TO_EN[profile_pl]
 
     K_ramp_global = 6
@@ -304,10 +292,10 @@ if not tryb_zaaw:
     elif profile_global == "Temporary":
         cA, cB = st.sidebar.columns(2)
         with cA:
-            K_up_global = st.sidebar.slider("Wzrost (okresy)", 1, 24, 3, 1)
-            H_hold_global = st.sidebar.slider("Utrzymanie (okresy)", 0, 24, 3, 1)
+            K_up_global = st.sidebar.slider("Wzrost (okresy)", 1, 24, 3, 1, key="K_up_global")
+            H_hold_global = st.sidebar.slider("Utrzymanie (okresy)", 0, 24, 3, 1, key="H_hold_global")
         with cB:
-            K_down_global = st.sidebar.slider("Spadek (okresy)", 1, 24, 3, 1)
+            K_down_global = st.sidebar.slider("Spadek (okresy)", 1, 24, 3, 1, key="K_down_global")
 
     st.sidebar.divider()
 
@@ -320,29 +308,33 @@ if not tryb_zaaw:
 # -------------------------
 else:
     def per_driver_profile_controls(key: str):
-        # profil
-        prof_pl = st.sidebar.selectbox("Profil m(t)", list(PROFILE_PL_TO_EN.keys()), index=1, key="profile_pl")
+    prof_pl = st.sidebar.selectbox(
+        "Profil m(t)",
+        list(PROFILE_PL_TO_EN.keys()),
+        index=1,
+        key=f"prof_{key}"
+    )
+    prof_en = PROFILE_PL_TO_EN[prof_pl]
 
-        prof_en = PROFILE_PL_TO_EN[prof_pl]
+    # domyślne parametry per driver
+    K_ramp = 6
+    K_up = 3
+    H_hold = 3
+    K_down = 3
 
-        # parametry czasu zależne od profilu
-        K_ramp = 6
-        K_up = 3
-        H_hold = 3
-        K_down = 3
+    if prof_en == "Ramp-up":
+        K_ramp = st.sidebar.slider("Czas narastania (okresy)", 1, 24, 6, 1, key=f"Kr_{key}")
 
-        if prof_en == "Ramp-up":
-            K_ramp = st.sidebar.slider("Czas narastania (okresy)", 1, 24, 6, 1, key=f"Kr_{key}")
-        elif prof_en == "Temporary":
-            c1, c2 = st.sidebar.columns(2)
-            with c1:
-                K_up_global   = st.sidebar.slider("Wzrost (okresy)", 1, 24, 3, 1, key="K_up_global")
-                H_hold_global = st.sidebar.slider("Utrzymanie (okresy)", 0, 24, 3, 1, key="H_hold_global")
-            with c2:
-                K_down_global = st.sidebar.slider("Spadek (okresy)", 1, 24, 3, 1, key="K_down_global")
+    elif prof_en == "Temporary":
+        c1, c2 = st.sidebar.columns(2)
+        with c1:
+            K_up = st.sidebar.slider("Wzrost (okresy)", 1, 24, 3, 1, key=f"Ku_{key}")
+            H_hold = st.sidebar.slider("Utrzymanie (okresy)", 0, 24, 3, 1, key=f"H_{key}")
+        with c2:
+            K_down = st.sidebar.slider("Spadek (okresy)", 1, 24, 3, 1, key=f"Kd_{key}")
 
-        return {"profile": prof_en, "K_ramp": K_ramp, "K_up": K_up, "H_hold": H_hold, "K_down": K_down}
-
+    return {"profile": prof_en, "K_ramp": K_ramp, "K_up": K_up, "H_hold": H_hold, "K_down": K_down}
+    
     for k in DRIVERS:
         # sekcja per driver: NAJPIERW profil, POTEM mnożnik
         st.sidebar.markdown(f"### {DRIVER_LABELS_PL.get(k, k).replace('(mnożnik docelowy ×)', '').strip()}")
