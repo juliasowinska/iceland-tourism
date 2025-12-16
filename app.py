@@ -212,11 +212,11 @@ def driver_slider_pl(driver_key: str):
     st.session_state.setdefault(f"mult_{driver_key}", float(default))
     return st.sidebar.slider(
         label,
-        float(lo), float(hi),
-        float(step),
-        key=f"mult_{driver_key}"
+        min_value=float(lo),
+        max_value=float(hi),
+        step=float(step),
+        key=f"mult_{driver_key}",
     )
-
 
 # =========================
 # Reset ustawień (przycisk "Restart")
