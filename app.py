@@ -122,22 +122,102 @@ def forecast_turnover_from_main(main_df):
 turnover_fitted = compute_turnover_fitted(df_clean)
 
 # =========================
-# 3) UI: suwaki
+# 3) Scenario multiplier path m(t)
 # =========================
-st.sidebar.header("Driver multipliers")
+def build_multiplier_path(index, m_target: float, profile: str,
+                          K_ramp: int = 6, K_up: int = 3, H_hold: int = 3, K_down: int = 3) -> pd.Series:
+    n = len(index)
+    t = np.arange(n, dtype=float)
 
-pass_mult = st.sidebar.slider("passengers x", 0.0, 2.0, 1.0, 0.05)
-occ_mult  = st.sidebar.slider("occupancy x", 0.0, 2.0, 1.0, 0.05)
-los_mult  = st.sidebar.slider("length_of_stay x", 0.0, 2.0, 1.0, 0.05)
-rent_mult = st.sidebar.slider("rental_cars x", 0.0, 2.0, 1.0, 0.05)
-cpiisl_mult = st.sidebar.slider("CPI Iceland x", 0.0, 2.0, 1.0, 0.05)
-cpiglobal_mult = st.sidebar.slider("CPI global x", 0.0, 2.0, 1.0, 0.05)
-usa_mult = st.sidebar.slider("USA index x", 0.0, 2.0, 1.0, 0.05)
-trends_mult = st.sidebar.slider("Google trends x", 0.0, 2.0, 1.0, 0.05)
-unemp_mult = st.sidebar.slider("Unemployment x", 0.0, 2.0, 1.0, 0.05)
+    if profile == "Constant":
+        w = np.ones(n, dtype=float)
+
+    elif profile == "Ramp-up":
+        K = max(int(K_ramp), 1)
+        w = np.clip(t / K, 0.0, 1.0)
+
+    elif profile == "Temporary":
+        Ku = max(int(K_up), 1)
+        H  = max(int(H_hold), 0)
+        Kd = max(int(K_down), 1)
+
+        w = np.zeros(n, dtype=float)
+        # up
+        up_end = min(Ku, n)
+        if up_end > 0:
+            w[:up_end] = np.linspace(0.0, 1.0, up_end, endpoint=True)
+
+        # hold
+        hold_start = Ku
+        hold_end = min(Ku + H, n)
+        if hold_end > hold_start:
+            w[hold_start:hold_end] = 1.0
+
+        # down
+        down_start = Ku + H
+        down_end = min(Ku + H + Kd, n)
+        if down_end > down_start:
+            w[down_start:down_end] = np.linspace(1.0, 0.0, down_end - down_start, endpoint=True)
+
+    else:
+        # fallback
+        w = np.ones(n, dtype=float)
+
+    m = 1.0 + (float(m_target) - 1.0) * w
+    return pd.Series(m, index=index, name="m_path")
+
+# Sensowne zakresy mnożników (min, max, default, step)
+DRIVER_RANGES = {
+    "passengers":     (0.70, 1.30, 1.00, 0.01),
+    "occupancy":      (0.85, 1.15, 1.00, 0.01),
+    "length_of_stay": (0.85, 1.15, 1.00, 0.01),
+    "rental_cars":    (0.70, 1.30, 1.00, 0.01),
+    "cpi_iceland":    (0.95, 1.05, 1.00, 0.005),
+    "cpi_global":_
 
 # =========================
-# 4) baseline + scenario
+# 4) UI: scenario settings + driver multipliers
+# =========================
+st.sidebar.header("Scenario settings")
+
+profile = st.sidebar.selectbox(
+    "Multiplier profile m(t)",
+    ["Constant", "Ramp-up", "Temporary"],
+    index=1  # domyślnie Ramp-up wygląda najbardziej naturalnie
+)
+
+K_ramp = 6
+K_up = 3
+H_hold = 3
+K_down = 3
+
+if profile == "Ramp-up":
+    K_ramp = st.sidebar.slider("Ramp length (periods)", 1, 24, 6, 1)
+elif profile == "Temporary":
+    cA, cB = st.sidebar.columns(2)
+    with cA:
+        K_up = st.sidebar.slider("Up (periods)", 1, 24, 3, 1)
+        H_hold = st.sidebar.slider("Hold (periods)", 0, 24, 3, 1)
+    with cB:
+        K_down = st.sidebar.slider("Down (periods)", 1, 24, 3, 1)
+
+show_mpath = st.sidebar.checkbox("Show m(t) preview", value=False)
+
+st.sidebar.header("Driver multipliers (target level vs baseline)")
+
+pass_mult = driver_slider("passengers", "passengers (target x)")
+occ_mult  = driver_slider("occupancy", "occupancy (target x)")
+los_mult  = driver_slider("length_of_stay", "length_of_stay (target x)")
+rent_mult = driver_slider("rental_cars", "rental_cars (target x)")
+cpiisl_mult = driver_slider("cpi_iceland", "CPI Iceland (target x)")
+cpiglobal_mult = driver_slider("cpi_global", "CPI global (target x)")
+usa_mult = driver_slider("USA", "USA index (target x)")
+trends_mult = driver_slider("google_trends", "Google trends (target x)")
+unemp_mult = driver_slider("unemployment", "Unemployment (target x)")
+
+
+# =========================
+# 5) baseline + scenario
 # =========================
 main_base = forecast_main_from_low(low_base)
 fc_base = forecast_turnover_from_main(main_base)
@@ -149,13 +229,18 @@ for col, mult in {
     "USA": usa_mult, "google_trends": trends_mult, "unemployment": unemp_mult
 }.items():
     if col in low_scen.columns:
-        low_scen[col] = low_scen[col] * mult
+        m_path = build_multiplier_path(
+            low_base.index, m_target=mult, profile=profile,
+            K_ramp=K_ramp, K_up=K_up, H_hold=H_hold, K_down=K_down
+        )
+        # kluczowa zmiana: scenariusz = baseline * m(t)
+        low_scen[col] = low_base[col] * m_path
 
 main_scen = forecast_main_from_low(low_scen)
 fc_scen = forecast_turnover_from_main(main_scen)
 
 # =========================
-# 5) wykresy
+# 6) wykresy
 # =========================
 def format_year_axis(ax):
     ax.xaxis.set_major_locator(mdates.YearLocator())
@@ -169,6 +254,20 @@ def format_y(ax):
 
 SMALL = (5.5, 3.2)
 WIDE  = (14, 3.6)  
+
+if show_mpath:
+    st.subheader("Preview: multiplier path m(t)")
+    fig, ax = plt.subplots(figsize=SMALL)
+    # podgląd dla jednego przykładowego drivera (np. passengers)
+    m_preview = build_multiplier_path(low_base.index, m_target=pass_mult, profile=profile,
+                                      K_ramp=K_ramp, K_up=K_up, H_hold=H_hold, K_down=K_down)
+    ax.plot(m_preview.index, m_preview.values, linewidth=2)
+    ax.set_title("m(t) for passengers")
+    ax.grid(alpha=0.3)
+    format_year_axis(ax)
+    ax.yaxis.set_major_formatter(mtick.StrMethodFormatter("{x:,.2f}"))
+    st.pyplot(fig, clear_figure=True)
+
 c1, c2, c3 = st.columns(3)
 
 with c1:
