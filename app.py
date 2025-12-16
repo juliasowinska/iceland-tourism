@@ -209,13 +209,14 @@ PROFILE_PL_TO_EN = {
 def driver_slider_pl(driver_key: str):
     lo, hi, default, step = DRIVER_RANGES.get(driver_key, (0.80, 1.20, 1.00, 0.01))
     label = DRIVER_LABELS_PL.get(driver_key, driver_key)
+    st.session_state.setdefault(f"mult_{driver_key}", float(default))
     return st.sidebar.slider(
         label,
         float(lo), float(hi),
-        float(default),
         float(step),
         key=f"mult_{driver_key}"
     )
+
 
 # =========================
 # Reset ustawień (przycisk "Restart")
@@ -242,7 +243,8 @@ def reset_ustawien():
 # 4) UI: ustawienia scenariusza + mnożniki driverów
 # =========================
 st.sidebar.header("Ustawienia scenariusza")
-tryb_zaaw = st.sidebar.checkbox("Tryb zaawansowany", value=False, key="tryb_zaaw")
+st.session_state.setdefault("tryb_zaaw", False)
+tryb_zaaw = st.sidebar.checkbox("Tryb zaawansowany", key="tryb_zaaw")
 
 st.sidebar.button("🔄 Reset ustawień", on_click=reset_ustawien)
 st.sidebar.divider()
@@ -272,10 +274,11 @@ driver_profiles = {}
 # TRYB PROSTY (globalny profil m(t) + suwaki)
 # -------------------------
 if not tryb_zaaw:
+    st.session_state.setdefault("profile_global_pl", "Narastający")
+    
     profile_pl = st.sidebar.selectbox(
         "Profil m(t)",
         list(PROFILE_PL_TO_EN.keys()),
-        index=1,
         key="profile_global_pl"
     )
 
@@ -286,15 +289,20 @@ if not tryb_zaaw:
     H_hold_global = 3
     K_down_global = 3
 
+    st.session_state.setdefault("K_ramp_global", 6)
+    st.session_state.setdefault("K_up_global", 3)
+    st.session_state.setdefault("H_hold_global", 3)
+    st.session_state.setdefault("K_down_global", 3)
+
     if profile_global == "Ramp-up":
-        K_ramp_global = st.sidebar.slider("Czas narastania (liczba okresów)", 1, 24, 6, 1, key="K_ramp_global")
+        K_ramp_global = st.sidebar.slider("Czas narastania (liczba okresów)", 1, 24, 1, key="K_ramp_global")
     elif profile_global == "Temporary":
         cA, cB = st.sidebar.columns(2)
         with cA:
-            K_up_global = st.sidebar.slider("Wzrost (okresy)", 1, 24, 3, 1, key="K_up_global")
-            H_hold_global = st.sidebar.slider("Utrzymanie (okresy)", 0, 24, 3, 1, key="H_hold_global")
+            K_up_global = st.sidebar.slider("Wzrost (okresy)", 1, 24, 1, key="K_up_global")
+            H_hold_global = st.sidebar.slider("Utrzymanie (okresy)", 0, 24, 1, key="H_hold_global")
         with cB:
-            K_down_global = st.sidebar.slider("Spadek (okresy)", 1, 24, 3, 1, key="K_down_global")
+            K_down_global = st.sidebar.slider("Spadek (okresy)", 1, 24, 1, key="K_down_global")
 
     st.sidebar.divider()
 
