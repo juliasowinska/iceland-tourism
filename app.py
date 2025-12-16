@@ -8,7 +8,8 @@ import matplotlib.dates as mdates
 import matplotlib.ticker as mtick
 
 st.set_page_config(page_title="Turystyka Islandii – Symulator scenariuszy", layout="wide")
-st.title("Obroty w sektorze turystycznym w Islandii – symulator scenariuszy")
+st.title("Obroty w sektorze turystycznym w Islandii")
+st.subtitle("symulator scenariuszy")
 
 COL = {
     "history": "tab:blue",       
