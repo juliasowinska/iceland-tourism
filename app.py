@@ -8,7 +8,7 @@ import matplotlib.dates as mdates
 import matplotlib.ticker as mtick
 
 st.set_page_config(page_title="Turystyka Islandii – Symulator scenariuszy", layout="wide")
-st.title("Turystyka Islandii – symulator scenariuszy")
+st.title("Obroty w sektorze turystycznym w Islandii – symulator scenariuszy")
 
 COL = {
     "history": "tab:blue",       
@@ -373,7 +373,7 @@ with c1:
         label="baseline", color=COL["baseline"], linewidth=2, alpha=0.9)
     ax.plot(main_scen.index, main_scen["overnight_stays"],
         label="scenario", color=COL["scenario"], linewidth=2)
-    ax.set_title("overnight_stays")
+    ax.set_title("Liczba noclegów")
     ax.grid(alpha=0.3)
     format_year_axis(ax); format_y(ax)
     ax.legend(fontsize=8)
@@ -385,7 +385,7 @@ with c2:
         label="baseline", color=COL["baseline"], linewidth=2, alpha=0.9)
     ax.plot(main_scen.index, main_scen["cpi_accommodation"],
         label="scenario", color=COL["scenario"], linewidth=2)
-    ax.set_title("cpi_accommodation")
+    ax.set_title("Inflacja w sektorze turystycznym Islandii")
     ax.grid(alpha=0.3)
     format_year_axis(ax); format_y(ax)
     ax.legend(fontsize=8)
@@ -397,7 +397,7 @@ with c3:
         label="baseline", color=COL["baseline"], linewidth=2, alpha=0.9)
     ax.plot(main_scen.index, main_scen["empoyment_tourism"],
         label="scenario", color=COL["scenario"], linewidth=2)
-    ax.set_title("employment_tourism")
+    ax.set_title("Zatrudnienie w sektorze turystycznym w Islandii")
     ax.grid(alpha=0.3)
     format_year_axis(ax); format_y(ax)
     ax.legend(fontsize=8)
@@ -413,7 +413,7 @@ ax.plot(fc_base.index, fc_base.values,
 ax.plot(fc_scen.index, fc_scen.values,
         label="Scenario forecast", color=COL["scenario"], linewidth=2, marker="o")
 ax.axvline(df_clean.index.max(), color="gray", linestyle="--", alpha=0.7)
-ax.set_title("Turnover – history, fitted, baseline vs scenario")
+ax.set_title("Obroty w sektorze turystycznym w Islandii")
 ax.grid(alpha=0.3)
 format_year_axis(ax); format_y(ax)
 ax.legend()
