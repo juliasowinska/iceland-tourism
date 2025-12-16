@@ -323,7 +323,7 @@ else:
     K_down_global = None
 
 # =========================
-# 5) baseline + scenario
+# 5)  + scenario
 # =========================
 main_base = forecast_main_from_low(low_base)
 fc_base = forecast_turnover_from_main(main_base)
@@ -370,7 +370,7 @@ c1, c2, c3 = st.columns(3)
 with c1:
     fig, ax = plt.subplots(figsize=SMALL)
     ax.plot(main_base.index, main_base["overnight_stays"], "--",
-        label="baseline", color=COL["baseline"], linewidth=2, alpha=0.9)
+        label="prognoza SARIMA + OLS", color=COL["baseline"], linewidth=2, alpha=0.9)
     ax.plot(main_scen.index, main_scen["overnight_stays"],
         label="scenario", color=COL["scenario"], linewidth=2)
     ax.set_title("Liczba noclegów")
