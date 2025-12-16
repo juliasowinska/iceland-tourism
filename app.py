@@ -221,22 +221,31 @@ def driver_slider_pl(driver_key: str):
 # Reset ustawień (przycisk "Restart")
 # =========================
 def reset_ustawien():
-    # reset trybu
-    st.session_state["tryb_zaaw"] = False
-    # reset ustawień globalnych (tryb prosty)
-    st.session_state["profile_global_pl"] = "Narastający"
-    st.session_state["K_ramp_global"] = 6
-    st.session_state["K_up_global"] = 3
-    st.session_state["H_hold_global"] = 3
-    st.session_state["K_down_global"] = 3
-    # reset mnożników driverów
-    for k, (lo, hi, default, step) in DRIVER_RANGES.items():
-        st.session_state[f"mult_{k}"] = float(default)
-    # reset profili per-driver
+    # lista kluczy do usunięcia (widgety + profile)
+    keys_to_clear = []
+    # checkbox trybu
+    keys_to_clear.append("tryb_zaaw")
+    # globalny profil (tryb prosty)
+    keys_to_clear += [
+        "profile_global_pl",
+        "K_ramp_global",
+        "K_up_global",
+        "H_hold_global",
+        "K_down_global",
+    ]
+    # mnożniki driverów
+    for k in DRIVER_RANGES.keys():
+        keys_to_clear.append(f"mult_{k}")
+    # profile per-driver (tryb zaawansowany)
     for key in list(st.session_state.keys()):
         if key.startswith(("prof_", "Kr_", "Ku_", "H_", "Kd_")):
-            del st.session_state[key]
+            keys_to_clear.append(key)
+    # faktyczne czyszczenie
+    for k in set(keys_to_clear):
+        if k in st.session_state:
+            del st.session_state[k]
     st.rerun()
+
 
 # =========================
 # 4) UI: ustawienia scenariusza + mnożniki driverów
